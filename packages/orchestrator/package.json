@@ -1,0 +1,15 @@
+{
+  "name": "@ai-orchestration/orchestrator",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot src/orchestrator.ts",
+    "start": "bun src/orchestrator.ts"
+  },
+  "dependencies": {
+    "@ai-orchestration/lib": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

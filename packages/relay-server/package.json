@@ -1,0 +1,15 @@
+{
+  "name": "@ai-orchestration/relay-server",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@ai-orchestration/lib": "workspace:*"
+  },
+  "scripts": {
+    "dev": "bun --hot src/server.ts",
+    "start": "bun src/server.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

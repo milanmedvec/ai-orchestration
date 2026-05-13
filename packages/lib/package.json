@@ -1,0 +1,11 @@
+{
+  "name": "@ai-orchestration/lib",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/protocol.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

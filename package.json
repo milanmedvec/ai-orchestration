@@ -1,0 +1,18 @@
+{
+  "name": "ai-orchestration",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "packages/lib",
+    "packages/client",
+    "packages/relay-server",
+    "packages/orchestrator"
+  ],
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
