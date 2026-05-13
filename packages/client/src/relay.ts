@@ -1,8 +1,11 @@
-import type {
-  InboundMsg,
-  ClientBoundMsg,
-  OrchestratorListMsg,
-  RegisterMsg,
+import {
+  ClientBoundMsgSchema,
+  serialize,
+  deserialize,
+  type InboundMsg,
+  type ClientBoundMsg,
+  type OrchestratorListMsg,
+  type RegisterMsg,
 } from "@ai-orchestration/lib";
 
 type MsgHandler<T extends ClientBoundMsg> = (msg: T) => void;
@@ -31,11 +34,16 @@ export function connect(url: string, name?: string): Promise<RelayClient> {
         role: "client",
         meta: { name: name ?? id },
       };
-      ws.send(JSON.stringify(reg));
+      ws.send(serialize(reg));
     });
 
     ws.addEventListener("message", (event) => {
-      const msg = JSON.parse(event.data as string) as ClientBoundMsg;
+      const result = deserialize(event.data as string, ClientBoundMsgSchema);
+      if (!result.ok) {
+        console.error("[relay] invalid message from server:", result.error);
+        return;
+      }
+      const msg = result.data;
 
       if (msg.type === "orchestrator_list") {
         initialList = msg;
@@ -43,7 +51,7 @@ export function connect(url: string, name?: string): Promise<RelayClient> {
         const client: RelayClient = {
           id,
           send(outbound) {
-            ws.send(JSON.stringify(outbound));
+            ws.send(serialize(outbound));
           },
           on(type, handler) {
             const list = (handlers[type] ??= []) as MsgHandler<typeof msg>[];

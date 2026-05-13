@@ -7,22 +7,24 @@ import {
   getClients,
   type PeerSocketData,
 } from "./state.ts";
-import type {
-  InboundMsg,
-  RegisterMsg,
-  TaskRequestMsg,
-  TaskAckMsg,
-  TaskProgressMsg,
-  TaskResultMsg,
-  TaskErrorMsg,
-  ClientBoundMsg,
-  OrchestratorBoundMsg,
+import {
+  InboundMsgSchema,
+  serialize,
+  deserialize,
+  type RegisterMsg,
+  type TaskRequestMsg,
+  type TaskAckMsg,
+  type TaskProgressMsg,
+  type TaskResultMsg,
+  type TaskErrorMsg,
+  type ClientBoundMsg,
+  type OrchestratorBoundMsg,
 } from "@ai-orchestration/lib";
 
 type WS = ServerWebSocket<PeerSocketData>;
 
 function send(ws: WS, msg: ClientBoundMsg | OrchestratorBoundMsg): void {
-  ws.send(JSON.stringify(msg));
+  ws.send(serialize(msg));
 }
 
 function sendError(ws: WS, code: string, message: string): void {
@@ -34,15 +36,13 @@ export function onOpen(ws: WS): void {
 }
 
 export function onMessage(ws: WS, raw: string | ArrayBuffer | Uint8Array): void {
-  let msg: InboundMsg;
-  try {
-    const text = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
-    msg = JSON.parse(text) as InboundMsg;
-  } catch {
-    sendError(ws, "PARSE_ERROR", "Invalid JSON");
+  const result = deserialize(raw, InboundMsgSchema);
+  if (!result.ok) {
+    sendError(ws, "INVALID_MESSAGE", result.error);
     return;
   }
 
+  const msg = result.data;
   switch (msg.type) {
     case "register":      return handleRegister(ws, msg);
     case "task_request":  return handleTaskRequest(ws, msg);
@@ -50,8 +50,6 @@ export function onMessage(ws: WS, raw: string | ArrayBuffer | Uint8Array): void 
     case "task_progress": return handleRelay(ws, msg);
     case "task_result":   return handleRelay(ws, msg);
     case "task_error":    return handleRelay(ws, msg);
-    default:
-      sendError(ws, "UNKNOWN_TYPE", `Unknown message type: ${(msg as { type: string }).type}`);
   }
 }
 

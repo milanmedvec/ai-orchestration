@@ -5,6 +5,9 @@
   "exports": {
     ".": "./src/protocol.ts"
   },
+  "dependencies": {
+    "zod": "^3"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   }

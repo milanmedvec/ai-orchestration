@@ -1,8 +1,10 @@
-import type {
-  RegisterMsg,
-  TaskAckMsg,
-  TaskResultMsg,
-  OrchestratorBoundMsg,
+import {
+  OrchestratorBoundMsgSchema,
+  serialize,
+  deserialize,
+  type RegisterMsg,
+  type TaskAckMsg,
+  type TaskResultMsg,
 } from "@ai-orchestration/lib";
 
 const RELAY_URL = process.env["RELAY_URL"] ?? "ws://localhost:3000/ws";
@@ -17,12 +19,17 @@ ws.addEventListener("open", () => {
     role: "orchestrator",
     meta: { name: "orchestrator-stub", capabilities: ["echo"] },
   };
-  ws.send(JSON.stringify(msg));
+  ws.send(serialize(msg));
   console.log(`[orchestrator] registered id=${orchestratorId}`);
 });
 
 ws.addEventListener("message", (event) => {
-  const msg = JSON.parse(event.data as string) as OrchestratorBoundMsg;
+  const result = deserialize(event.data as string, OrchestratorBoundMsgSchema);
+  if (!result.ok) {
+    console.error("[orchestrator] invalid message:", result.error);
+    return;
+  }
+  const msg = result.data;
   console.log(`[orchestrator] received`, JSON.stringify(msg, null, 2));
 
   if (msg.type === "task_dispatch") {
@@ -31,7 +38,7 @@ ws.addEventListener("message", (event) => {
       requestId: msg.requestId,
       orchestratorId,
     };
-    ws.send(JSON.stringify(ack));
+    ws.send(serialize(ack));
 
     setTimeout(() => {
       const result: TaskResultMsg = {
@@ -39,7 +46,7 @@ ws.addEventListener("message", (event) => {
         requestId: msg.requestId,
         result: { echo: msg.payload },
       };
-      ws.send(JSON.stringify(result));
+      ws.send(serialize(result));
       console.log(`[orchestrator] sent task_result for ${msg.requestId}`);
     }, 500);
   }
