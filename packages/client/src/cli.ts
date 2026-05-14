@@ -53,10 +53,10 @@ program
 program
   .command("create-project <name>")
   .description("create a new project")
-  .option("--path <path>", "project path")
-  .action(async (name: string, cmdOpts: { path?: string }) => {
+  .option("--repo-url <url>", "git repository URL")
+  .action(async (name: string, cmdOpts: { repoUrl?: string }) => {
     const opts = program.opts<GlobalOpts>();
-    await runCommand(opts, "create_project", { name, ...(cmdOpts.path ? { path: cmdOpts.path } : {}) });
+    await runCommand(opts, "create_project", { name, repoUrl: cmdOpts.repoUrl ?? "" });
   });
 
 // ── list-sessions ─────────────────────────────────────────────────────────────

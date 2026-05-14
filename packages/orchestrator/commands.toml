@@ -6,7 +6,7 @@
 run = "commands/list_projects.sh"
 
 [commands.create_project]
-run = "commands/create_project.sh '{{name}}'"
+run = "commands/create_project.sh '{{name}}' '{{repoUrl}}'"
 
 [commands.list_sessions]
 run = "commands/list_sessions.sh '{{projectId}}'"
