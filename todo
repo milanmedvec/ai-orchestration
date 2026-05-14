@@ -1,0 +1,10 @@
+- orchestrator should have own cli to run all bash commands
+- orchestrator should container cm (container manager) to manage containers
+- orchestrator should have command how to init rootfs
+
+- client should have react app to control orchestrator by web
+
+- when we are creating project, project name can be infered from repository
+- when we are creating a session, session name can be given by user like a name of feature, not hash
+
+- polishing

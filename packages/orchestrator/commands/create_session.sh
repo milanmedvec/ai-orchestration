@@ -20,9 +20,11 @@ jq \
   --arg rootfs "$rootfs" \
   --arg src "$session_dir" \
   --arg hostname "$container_id" \
+  --arg session_id "$session_id" \
   '
     .root.path = $rootfs |
     .hostname = $hostname |
+    .process.args += ["--remote-control", $session_id] |
     (.mounts[] | select(.destination == "/project") | .source) = $src
   ' "$commands_dir/config.json.template" > "$session_dir/config.json" \
   || { printf '{"error":"failed to generate config.json"}\n' >&2; exit 1; }
