@@ -12,11 +12,11 @@ import {
   serialize,
   deserialize,
   type RegisterMsg,
-  type TaskRequestMsg,
-  type TaskAckMsg,
-  type TaskProgressMsg,
-  type TaskResultMsg,
-  type TaskErrorMsg,
+  type CommandRequestMsg,
+  type CommandAckMsg,
+  type CommandProgressMsg,
+  type CommandResultMsg,
+  type CommandErrorMsg,
   type ClientBoundMsg,
   type OrchestratorBoundMsg,
 } from "@ai-orchestration/lib";
@@ -44,12 +44,12 @@ export function onMessage(ws: WS, raw: string | ArrayBuffer | Uint8Array): void 
 
   const msg = result.data;
   switch (msg.type) {
-    case "register":      return handleRegister(ws, msg);
-    case "task_request":  return handleTaskRequest(ws, msg);
-    case "task_ack":      return handleRelay(ws, msg);
-    case "task_progress": return handleRelay(ws, msg);
-    case "task_result":   return handleRelay(ws, msg);
-    case "task_error":    return handleRelay(ws, msg);
+    case "register":          return handleRegister(ws, msg);
+    case "command_request":   return handleCommandRequest(ws, msg);
+    case "command_ack":       return handleRelay(ws, msg);
+    case "command_progress":  return handleRelay(ws, msg);
+    case "command_result":    return handleRelay(ws, msg);
+    case "command_error":     return handleRelay(ws, msg);
   }
 }
 
@@ -92,9 +92,9 @@ function handleRegister(ws: WS, msg: RegisterMsg): void {
   }
 }
 
-function handleTaskRequest(ws: WS, msg: TaskRequestMsg): void {
+function handleCommandRequest(ws: WS, msg: CommandRequestMsg): void {
   if (!ws.data.id) {
-    sendError(ws, "NOT_REGISTERED", "Must register before sending tasks");
+    sendError(ws, "NOT_REGISTERED", "Must register before sending commands");
     return;
   }
 
@@ -105,16 +105,20 @@ function handleTaskRequest(ws: WS, msg: TaskRequestMsg): void {
   }
 
   send(orchestrator.ws, {
-    type: "task_dispatch",
+    type: "command_dispatch",
     requestId: msg.requestId,
     clientId: ws.data.id,
-    payload: msg.payload,
+    command: msg.command,
+    input: msg.input,
   });
 }
 
-// Relay task lifecycle messages from orchestrator to all clients.
+// Relay command lifecycle messages from orchestrator to all clients.
 // Clients correlate responses to their requests via requestId.
-function handleRelay(ws: WS, msg: TaskAckMsg | TaskProgressMsg | TaskResultMsg | TaskErrorMsg): void {
+function handleRelay(
+  ws: WS,
+  msg: CommandAckMsg | CommandProgressMsg | CommandResultMsg | CommandErrorMsg,
+): void {
   if (!ws.data.id) {
     sendError(ws, "NOT_REGISTERED", "Must register first");
     return;

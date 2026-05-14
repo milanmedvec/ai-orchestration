@@ -1,0 +1,18 @@
+# Map protocol command names to shell commands.
+# Input fields are available as {{fieldName}} template variables.
+# Each command must write valid JSON to stdout matching the protocol output schema.
+
+[commands.list_projects]
+run = "echo '{\"projects\": []}'"
+
+[commands.create_project]
+run = "echo '{\"id\": \"{{name}}\", \"name\": \"{{name}}\", \"path\": null}'"
+
+[commands.list_sessions]
+run = "echo '{\"sessions\": []}'"
+
+[commands.create_session]
+run = "echo '{\"id\": \"sess-1\", \"projectId\": \"{{projectId}}\", \"status\": \"active\"}'"
+
+[commands.terminate_session]
+run = "echo '{\"success\": true, \"sessionId\": \"{{sessionId}}\"}'"

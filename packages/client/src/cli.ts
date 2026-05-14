@@ -1,14 +1,16 @@
 import { program } from "commander";
-import { connect } from "./relay.ts";
-import type { TaskRequestMsg } from "@ai-orchestration/lib";
+import { connect, type RelayClient } from "./relay.ts";
+import type { CommandName, CommandRequestMsg } from "@ai-orchestration/lib";
 
-const DEFAULT_RELAY = process.env["RELAY_URL"] ?? "ws://localhost:3000/ws";
+const DEFAULT_RELAY = Bun.env["RELAY_URL"] ?? "ws://localhost:3000/ws";
 
 program
   .name("ai-client")
   .description("CLI client for the ai-orchestration relay")
   .option("--relay <url>", "relay server URL", DEFAULT_RELAY)
-  .option("--name <name>", "client display name", process.env["HOSTNAME"] ?? "client");
+  .option("--name <name>", "client display name", Bun.env["HOSTNAME"] ?? "client")
+  .option("--orchestrator <id>", "target orchestrator ID (default: first available)")
+  .option("--timeout <ms>", "result wait timeout in ms", "30000");
 
 // ── orchestrators ─────────────────────────────────────────────────────────────
 
@@ -36,78 +38,126 @@ program
     });
   });
 
-// ── task ──────────────────────────────────────────────────────────────────────
+// ── list-projects ─────────────────────────────────────────────────────────────
 
 program
-  .command("task <prompt>")
-  .description("send a task to an orchestrator")
-  .option("--orchestrator <id>", "target orchestrator ID (default: first available)")
-  .option("--timeout <ms>", "result wait timeout in ms", "30000")
-  .action(async (prompt: string, cmdOpts: { orchestrator?: string; timeout: string }) => {
-    const opts = program.opts<{ relay: string; name: string }>();
-    const relay = await connect(opts.relay, opts.name).catch(bail);
+  .command("list-projects")
+  .description("list all projects on an orchestrator")
+  .action(async () => {
+    const opts = program.opts<GlobalOpts>();
+    await runCommand(opts, "list_projects", {});
+  });
 
-    const requestId = crypto.randomUUID();
-    const timeout = Number(cmdOpts.timeout);
-    let timer: ReturnType<typeof setTimeout> | undefined;
+// ── create-project ────────────────────────────────────────────────────────────
 
-    const done = () => {
-      clearTimeout(timer);
-      relay.close();
-    };
+program
+  .command("create-project <name>")
+  .description("create a new project")
+  .option("--path <path>", "project path")
+  .action(async (name: string, cmdOpts: { path?: string }) => {
+    const opts = program.opts<GlobalOpts>();
+    await runCommand(opts, "create_project", { name, ...(cmdOpts.path ? { path: cmdOpts.path } : {}) });
+  });
 
-    relay.on("orchestrator_list", (msg) => {
-      const targetId = cmdOpts.orchestrator ?? msg.orchestrators[0]?.id;
-      if (!targetId) {
-        console.error("No orchestrators available.");
-        done();
-        process.exit(1);
-      }
+// ── list-sessions ─────────────────────────────────────────────────────────────
 
-      const req: TaskRequestMsg = {
-        type: "task_request",
-        requestId,
-        targetOrchestratorId: targetId,
-        payload: { prompt },
-      };
-      relay.send(req);
-      console.log(`Sent task ${requestId} → ${targetId}`);
+program
+  .command("list-sessions <projectId>")
+  .description("list sessions for a project")
+  .action(async (projectId: string) => {
+    const opts = program.opts<GlobalOpts>();
+    await runCommand(opts, "list_sessions", { projectId });
+  });
 
-      timer = setTimeout(() => {
-        console.error(`Timed out waiting for result (${timeout}ms)`);
-        relay.close();
-        process.exit(1);
-      }, timeout);
-    });
+// ── create-session ────────────────────────────────────────────────────────────
 
-    relay.on("task_ack", (msg) => {
-      if (msg.requestId !== requestId) return;
-      console.log(`Acknowledged by ${msg.orchestratorId}`);
-    });
+program
+  .command("create-session <projectId>")
+  .description("create a new session for a project")
+  .action(async (projectId: string) => {
+    const opts = program.opts<GlobalOpts>();
+    await runCommand(opts, "create_session", { projectId });
+  });
 
-    relay.on("task_progress", (msg) => {
-      if (msg.requestId !== requestId) return;
-      const label = msg.message ? ` — ${msg.message}` : "";
-      console.log(`Progress: ${msg.progress}%${label}`);
-    });
+// ── terminate-session ─────────────────────────────────────────────────────────
 
-    relay.on("task_result", (msg) => {
-      if (msg.requestId !== requestId) return;
-      console.log("Result:");
-      console.log(JSON.stringify(msg.result, null, 2));
-      done();
-      process.exit(0);
-    });
-
-    relay.on("task_error", (msg) => {
-      if (msg.requestId !== requestId) return;
-      console.error(`Error [${msg.code}]: ${msg.message}`);
-      done();
-      process.exit(1);
-    });
+program
+  .command("terminate-session <sessionId>")
+  .description("terminate an existing session")
+  .action(async (sessionId: string) => {
+    const opts = program.opts<GlobalOpts>();
+    await runCommand(opts, "terminate_session", { sessionId });
   });
 
 program.parseAsync().catch(bail);
+
+// ── Shared helpers ────────────────────────────────────────────────────────────
+
+interface GlobalOpts {
+  relay: string;
+  name: string;
+  orchestrator?: string;
+  timeout: string;
+}
+
+async function runCommand(opts: GlobalOpts, command: CommandName, input: Record<string, unknown>): Promise<void> {
+  const relay = await connect(opts.relay, opts.name).catch(bail);
+  const requestId = crypto.randomUUID();
+  const timeout = Number(opts.timeout);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const done = (code = 0) => {
+    clearTimeout(timer);
+    relay.close();
+    process.exit(code);
+  };
+
+  relay.on("orchestrator_list", (msg) => {
+    const targetId = opts.orchestrator ?? msg.orchestrators[0]?.id;
+    if (!targetId) {
+      console.error("No orchestrators available.");
+      done(1);
+    }
+
+    const req: CommandRequestMsg = {
+      type: "command_request",
+      requestId,
+      targetOrchestratorId: targetId!,
+      command,
+      input,
+    };
+    relay.send(req);
+
+    timer = setTimeout(() => {
+      console.error(`Timed out waiting for result (${timeout}ms)`);
+      relay.close();
+      process.exit(1);
+    }, timeout);
+  });
+
+  relay.on("command_ack", (msg) => {
+    if (msg.requestId !== requestId) return;
+    console.error(`[ack] ${msg.orchestratorId}`);
+  });
+
+  relay.on("command_progress", (msg) => {
+    if (msg.requestId !== requestId) return;
+    const label = msg.message ? ` — ${msg.message}` : "";
+    console.error(`[progress] ${msg.progress}%${label}`);
+  });
+
+  relay.on("command_result", (msg) => {
+    if (msg.requestId !== requestId) return;
+    console.log(JSON.stringify(msg.output, null, 2));
+    done(0);
+  });
+
+  relay.on("command_error", (msg) => {
+    if (msg.requestId !== requestId) return;
+    console.error(`Error [${msg.code}]: ${msg.message}`);
+    done(1);
+  });
+}
 
 function bail(err: unknown): never {
   console.error(String(err instanceof Error ? err.message : err));

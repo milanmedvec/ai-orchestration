@@ -5,9 +5,10 @@ Bun workspace monorepo. Three packages under `packages/`:
 
 | Package | Name | Purpose |
 |---|---|---|
-| `packages/relay-server` | `@ai-orchestration/relay-server` | WebSocket hub. Clients and orchestrators connect here. Also exports all shared protocol types. |
-| `packages/client` | `@ai-orchestration/client` | Connects to relay-server, sends tasks to orchestrators, receives results. |
-| `packages/orchestrator` | `@ai-orchestration/orchestrator` | Connects to relay-server, receives dispatched tasks, sends back results. |
+| `packages/lib` | `@ai-orchestration/lib` | Shared Zod schemas, inferred types, `serialize`/`deserialize` helpers, command registry. |
+| `packages/relay-server` | `@ai-orchestration/relay-server` | WebSocket hub. Routes messages between clients and orchestrators. |
+| `packages/client` | `@ai-orchestration/client` | CLI client. Commands: `orchestrators`, `list-projects`, `create-project`, `list-sessions`, `create-session`, `terminate-session`. |
+| `packages/orchestrator` | `@ai-orchestration/orchestrator` | Reads `commands.toml`, runs shell commands, validates input/output against protocol schemas. |
 
 Each package has its own `tsconfig.json` extending the root one, and a `src/` directory for implementation files.
 
@@ -28,11 +29,13 @@ Health check: `curl http://localhost:3000/health`
 
 ### Protocol
 
-All shared message types live in `packages/lib/src/protocol.ts`. Import them as:
+All shared Zod schemas, types, and helpers live in `packages/lib/src/protocol.ts`. Import from `@ai-orchestration/lib`.
 
-```ts
-import type { RegisterMsg, TaskRequestMsg } from "@ai-orchestration/lib";
-```
+**Commands** (defined in `CommandDefs`): `list_projects`, `create_project`, `list_sessions`, `create_session`, `terminate_session`. Each has `input` and `output` Zod schemas.
+
+**Message flow**: `command_request` (client→relay→orchestrator as `command_dispatch`) → `command_ack` → `command_result` or `command_error` (orchestrator→relay→all clients, correlated by `requestId`).
+
+**Orchestrator config**: `packages/orchestrator/commands.toml` maps command names to shell commands with `{{fieldName}}` template vars. Commands must output JSON to stdout matching the output schema.
 
 WebSocket endpoint: `ws://localhost:3000/ws` (override with `RELAY_URL` / `PORT` env vars).
 

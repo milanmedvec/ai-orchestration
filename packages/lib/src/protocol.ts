@@ -21,12 +21,63 @@ export function deserialize<T>(
     : { ok: false, error: result.error.errors[0]?.message ?? "Invalid message" };
 }
 
+// ── Domain schemas ────────────────────────────────────────────────────────────
+
 export const RoleSchema = z.enum(["client", "orchestrator"]);
 
 export const PeerMetaSchema = z.object({
   name: z.string().optional(),
   capabilities: z.array(z.string()).optional(),
 }).passthrough();
+
+export const ProjectSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  path: z.string().nullable().optional(),
+});
+
+export const SessionSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  status: z.enum(["active", "idle", "terminated"]),
+});
+
+// ── Command registry ──────────────────────────────────────────────────────────
+
+export const CommandDefs = {
+  list_projects: {
+    input: z.object({}),
+    output: z.object({ projects: z.array(ProjectSchema) }),
+  },
+  create_project: {
+    input: z.object({ name: z.string(), path: z.string().optional() }),
+    output: ProjectSchema,
+  },
+  list_sessions: {
+    input: z.object({ projectId: z.string() }),
+    output: z.object({ sessions: z.array(SessionSchema) }),
+  },
+  create_session: {
+    input: z.object({ projectId: z.string() }),
+    output: SessionSchema,
+  },
+  terminate_session: {
+    input: z.object({ sessionId: z.string() }),
+    output: z.object({ success: z.boolean(), sessionId: z.string() }),
+  },
+} as const;
+
+export const CommandNameSchema = z.enum([
+  "list_projects",
+  "create_project",
+  "list_sessions",
+  "create_session",
+  "terminate_session",
+]);
+
+export type CommandName = z.infer<typeof CommandNameSchema>;
+export type CommandInput<K extends CommandName> = z.infer<typeof CommandDefs[K]["input"]>;
+export type CommandOutput<K extends CommandName> = z.infer<typeof CommandDefs[K]["output"]>;
 
 // ── Inbound: peer → server ────────────────────────────────────────────────────
 
@@ -37,34 +88,36 @@ export const RegisterMsgSchema = z.object({
   meta: PeerMetaSchema.optional(),
 });
 
-export const TaskRequestMsgSchema = z.object({
-  type: z.literal("task_request"),
+export const CommandRequestMsgSchema = z.object({
+  type: z.literal("command_request"),
   requestId: z.string(),
   targetOrchestratorId: z.string(),
-  payload: z.unknown(),
+  command: CommandNameSchema,
+  input: z.unknown(),
 });
 
-export const TaskAckMsgSchema = z.object({
-  type: z.literal("task_ack"),
+export const CommandAckMsgSchema = z.object({
+  type: z.literal("command_ack"),
   requestId: z.string(),
   orchestratorId: z.string(),
 });
 
-export const TaskProgressMsgSchema = z.object({
-  type: z.literal("task_progress"),
+export const CommandProgressMsgSchema = z.object({
+  type: z.literal("command_progress"),
   requestId: z.string(),
   progress: z.number().min(0).max(100),
   message: z.string().optional(),
 });
 
-export const TaskResultMsgSchema = z.object({
-  type: z.literal("task_result"),
+export const CommandResultMsgSchema = z.object({
+  type: z.literal("command_result"),
   requestId: z.string(),
-  result: z.unknown(),
+  command: CommandNameSchema,
+  output: z.unknown(),
 });
 
-export const TaskErrorMsgSchema = z.object({
-  type: z.literal("task_error"),
+export const CommandErrorMsgSchema = z.object({
+  type: z.literal("command_error"),
   requestId: z.string(),
   code: z.string(),
   message: z.string(),
@@ -72,11 +125,11 @@ export const TaskErrorMsgSchema = z.object({
 
 export const InboundMsgSchema = z.discriminatedUnion("type", [
   RegisterMsgSchema,
-  TaskRequestMsgSchema,
-  TaskAckMsgSchema,
-  TaskProgressMsgSchema,
-  TaskResultMsgSchema,
-  TaskErrorMsgSchema,
+  CommandRequestMsgSchema,
+  CommandAckMsgSchema,
+  CommandProgressMsgSchema,
+  CommandResultMsgSchema,
+  CommandErrorMsgSchema,
 ]);
 
 // ── Outbound: server → client ─────────────────────────────────────────────────
@@ -112,24 +165,25 @@ export const ClientBoundMsgSchema = z.discriminatedUnion("type", [
   OrchestratorListMsgSchema,
   OrchestratorJoinedMsgSchema,
   OrchestratorLeftMsgSchema,
-  TaskAckMsgSchema,
-  TaskProgressMsgSchema,
-  TaskResultMsgSchema,
-  TaskErrorMsgSchema,
+  CommandAckMsgSchema,
+  CommandProgressMsgSchema,
+  CommandResultMsgSchema,
+  CommandErrorMsgSchema,
   ErrorMsgSchema,
 ]);
 
 // ── Outbound: server → orchestrator ──────────────────────────────────────────
 
-export const TaskDispatchMsgSchema = z.object({
-  type: z.literal("task_dispatch"),
+export const CommandDispatchMsgSchema = z.object({
+  type: z.literal("command_dispatch"),
   requestId: z.string(),
   clientId: z.string(),
-  payload: z.unknown(),
+  command: CommandNameSchema,
+  input: z.unknown(),
 });
 
 export const OrchestratorBoundMsgSchema = z.discriminatedUnion("type", [
-  TaskDispatchMsgSchema,
+  CommandDispatchMsgSchema,
   ErrorMsgSchema,
 ]);
 
@@ -137,17 +191,19 @@ export const OrchestratorBoundMsgSchema = z.discriminatedUnion("type", [
 
 export type Role = z.infer<typeof RoleSchema>;
 export type PeerMeta = z.infer<typeof PeerMetaSchema>;
+export type Project = z.infer<typeof ProjectSchema>;
+export type Session = z.infer<typeof SessionSchema>;
 export type RegisterMsg = z.infer<typeof RegisterMsgSchema>;
-export type TaskRequestMsg = z.infer<typeof TaskRequestMsgSchema>;
-export type TaskAckMsg = z.infer<typeof TaskAckMsgSchema>;
-export type TaskProgressMsg = z.infer<typeof TaskProgressMsgSchema>;
-export type TaskResultMsg = z.infer<typeof TaskResultMsgSchema>;
-export type TaskErrorMsg = z.infer<typeof TaskErrorMsgSchema>;
+export type CommandRequestMsg = z.infer<typeof CommandRequestMsgSchema>;
+export type CommandAckMsg = z.infer<typeof CommandAckMsgSchema>;
+export type CommandProgressMsg = z.infer<typeof CommandProgressMsgSchema>;
+export type CommandResultMsg = z.infer<typeof CommandResultMsgSchema>;
+export type CommandErrorMsg = z.infer<typeof CommandErrorMsgSchema>;
 export type InboundMsg = z.infer<typeof InboundMsgSchema>;
 export type OrchestratorListMsg = z.infer<typeof OrchestratorListMsgSchema>;
 export type OrchestratorJoinedMsg = z.infer<typeof OrchestratorJoinedMsgSchema>;
 export type OrchestratorLeftMsg = z.infer<typeof OrchestratorLeftMsgSchema>;
 export type ErrorMsg = z.infer<typeof ErrorMsgSchema>;
 export type ClientBoundMsg = z.infer<typeof ClientBoundMsgSchema>;
-export type TaskDispatchMsg = z.infer<typeof TaskDispatchMsgSchema>;
+export type CommandDispatchMsg = z.infer<typeof CommandDispatchMsgSchema>;
 export type OrchestratorBoundMsg = z.infer<typeof OrchestratorBoundMsgSchema>;
