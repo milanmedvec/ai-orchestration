@@ -3,16 +3,16 @@
 # Each command must write valid JSON to stdout matching the protocol output schema.
 
 [commands.list_projects]
-run = "echo '{\"projects\": []}'"
+run = "commands/list_projects.sh"
 
 [commands.create_project]
-run = "echo '{\"id\": \"{{name}}\", \"name\": \"{{name}}\", \"path\": null}'"
+run = "commands/create_project.sh '{{name}}'"
 
 [commands.list_sessions]
-run = "echo '{\"sessions\": []}'"
+run = "commands/list_sessions.sh '{{projectId}}'"
 
 [commands.create_session]
-run = "echo '{\"id\": \"sess-1\", \"projectId\": \"{{projectId}}\", \"status\": \"active\"}'"
+run = "commands/create_session.sh '{{projectId}}'"
 
 [commands.terminate_session]
-run = "echo '{\"success\": true, \"sessionId\": \"{{sessionId}}\"}'"
+run = "commands/terminate_session.sh '{{sessionId}}'"
