@@ -1,0 +1,290 @@
+#!/bin/bash
+
+set -euo pipefail
+
+DATA="$HOME/.local/share/cm"
+
+bootstrap() {
+    if [[ ! -d "$DATA" ]]; then
+        mkdir -p "$DATA"
+    fi
+}
+
+list() {
+    local found=0
+
+    for project_dir in "$DATA"/*/; do
+        [[ -d "$project_dir" ]] || continue
+
+        local project
+        project=$(basename "$project_dir")
+        echo "$project"
+
+        for bundle_dir in "$project_dir"*/; do
+            [[ -d "$bundle_dir" ]] || continue
+            echo "  $(basename "$bundle_dir")"
+        done
+
+        found=1
+    done
+
+    if [[ $found -eq 0 ]]; then
+        echo "No bundles found. Use 'cm create' inside a project directory."
+    fi
+}
+
+create() {
+    local project
+    project=$(basename "$PWD")
+
+    local subname="${1:-default}"
+    local bundle="$DATA/$project/$subname"
+
+    if [[ -d "$bundle" ]]; then
+        echo "Error: bundle '$project/$subname' already exists." >&2
+        exit 1
+    fi
+
+    echo "Creating bundle '$project/$subname'..."
+    mkdir -p "$bundle/rootfs"
+
+    echo "Exporting debian:latest rootfs (this may take a moment)..."
+    local cid
+    cid=$(docker create debian:latest)
+    docker export "$cid" | tar -C "$bundle/rootfs" -xf -
+    docker rm "$cid" > /dev/null
+
+    echo "nameserver 8.8.8.8" > "$bundle/rootfs/etc/resolv.conf"
+    echo "127.0.0.1        localhost" > "$bundle/rootfs/etc/hosts"
+    chmod 1777 "$bundle/rootfs/tmp"
+
+    echo "Generating rootless runc spec..."
+    runc spec --rootless --bundle "$bundle"
+
+    echo "Patching config.json..."
+    patch_config "$bundle" "$PWD"
+
+    echo "Bundle '$project/$subname' created at $bundle"
+}
+
+patch_config() {
+    local config="$1/config.json"
+    local src="$2"
+    local caps='[
+        "CAP_AUDIT_WRITE","CAP_KILL","CAP_NET_BIND_SERVICE",
+        "CAP_CHOWN","CAP_DAC_OVERRIDE","CAP_FSETID","CAP_FOWNER",
+        "CAP_MKNOD","CAP_NET_RAW","CAP_SETGID","CAP_SETUID",
+        "CAP_SETFCAP","CAP_SETPCAP","CAP_SYS_CHROOT"
+    ]'
+    local uid_gid_maps='[
+        {"containerID": 0, "hostID": 1000, "size": 1},
+        {"containerID": 1, "hostID": 100000, "size": 65536}
+    ]'
+
+    jq \
+        --argjson caps "$caps" \
+        --argjson maps "$uid_gid_maps" \
+        --arg src "$src" \
+        '
+            .root.readonly = false |
+            .process.cwd = "/project" |
+            .process.capabilities.bounding   = $caps |
+            .process.capabilities.effective  = $caps |
+            .process.capabilities.permitted  = $caps |
+            .linux.uidMappings = $maps |
+            .linux.gidMappings = $maps |
+            .mounts += [{
+                "destination": "/project",
+                "type": "none",
+                "source": $src,
+                "options": ["rbind", "rw"]
+            }]
+        ' "$config" > "$config.tmp" && mv "$config.tmp" "$config"
+}
+
+delete_bundle() {
+    local bundle="$1"
+    local label="$2"
+
+    if [[ ! -d "$bundle" ]]; then
+        echo "Error: bundle '$label' not found." >&2
+        exit 1
+    fi
+
+    local containers
+    containers=$(runc list --format json 2>/dev/null \
+        | jq -r --arg bundle "$bundle" '.[] | select(.bundle == $bundle) | .id' 2>/dev/null \
+        || true)
+
+    for cid in $containers; do
+        local status
+        status=$(runc state "$cid" 2>/dev/null \
+            | jq -r '.status' 2>/dev/null \
+            || echo "unknown")
+
+        if [[ "$status" == "running" || "$status" == "paused" ]]; then
+            echo "Killing container '$cid'..."
+            runc kill "$cid" KILL 2>/dev/null || true
+            sleep 1
+        fi
+        
+        echo "Deleting container '$cid'..."
+        runc delete "$cid" 2>/dev/null || true
+    done
+
+    echo "Removing '$label'..."
+    rm -rf "$bundle"
+}
+
+delete() {
+    local project subname
+
+    # If first arg is a known project in $DATA, treat it as project name
+    if [[ -n "${1:-}" && -d "$DATA/${1}" ]]; then
+        project="${1}"
+        subname="${2:-}"
+    else
+        project=$(basename "$PWD")
+        subname="${1:-default}"
+    fi
+
+    if [[ -z "$subname" ]]; then
+        # Delete entire project
+        if [[ ! -d "$DATA/$project" ]]; then
+            echo "Error: project '$project' not found." >&2
+            exit 1
+        fi
+
+        for bundle_dir in "$DATA/$project"/*/; do
+            [[ -d "$bundle_dir" ]] || continue
+            delete_bundle "$bundle_dir" "$project/$(basename "$bundle_dir")"
+        done
+
+        rmdir "$DATA/$project" 2>/dev/null || true
+    else
+        delete_bundle "$DATA/$project/$subname" "$project/$subname"
+
+        # Clean up empty project dir
+        if [[ -d "$DATA/$project" ]] && [[ -z "$(ls -A "$DATA/$project")" ]]; then
+            rmdir "$DATA/$project"
+        fi
+    fi
+
+    echo "Done."
+}
+
+parse_memory() {
+    local mem="${1,,}"
+    if [[ "$mem" =~ ^([0-9]+)g$ ]]; then
+        echo $(( ${BASH_REMATCH[1]} * 1024 * 1024 * 1024 ))
+    elif [[ "$mem" =~ ^([0-9]+)m$ ]]; then
+        echo $(( ${BASH_REMATCH[1]} * 1024 * 1024 ))
+    elif [[ "$mem" =~ ^([0-9]+)k$ ]]; then
+        echo $(( ${BASH_REMATCH[1]} * 1024 ))
+    elif [[ "$mem" =~ ^[0-9]+$ ]]; then
+        echo "$mem"
+    else
+        echo "Error: invalid memory format '$1' (use e.g. 512m, 2g, 1024k)" >&2
+        exit 1
+    fi
+}
+
+run() {
+    local subname="default"
+    local memory=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --memory|-m)
+                memory="$2"
+                shift 2
+                ;;
+            *)
+                subname="$1"
+                shift
+                ;;
+        esac
+    done
+
+    local project
+    project=$(basename "$PWD")
+    local bundle="$DATA/$project/$subname"
+
+    if [[ ! -d "$bundle" ]]; then
+        echo "Error: bundle '$project/$subname' not found. Use 'cm list' to see available bundles." >&2
+        exit 1
+    fi
+
+    local run_bundle="$bundle"
+
+    if [[ -n "$memory" ]]; then
+        local limit
+        limit=$(parse_memory "$memory")
+        run_bundle=$(mktemp -d)
+
+        jq --argjson limit "$limit" \
+            --arg rootfs "$bundle/rootfs" \
+            '.linux.resources.memory.limit = $limit | .root.path = $rootfs' \
+            "$bundle/config.json" > "$run_bundle/config.json"
+
+        echo "Memory limit: $memory ($limit bytes)"
+    fi
+
+    local cid="${project}-${subname}-$(date +%s)"
+    echo "Starting container '$cid' from bundle '$project/$subname'..."
+    runc run --bundle "$run_bundle" "$cid"
+
+    if [[ -n "$memory" ]]; then
+        rm -rf "$run_bundle"
+    fi
+}
+
+help() {
+    cat <<EOF
+cm - runc container manager
+
+Usage:
+  cm <command> [subname]
+
+Commands:
+  list                 List all projects and their bundles
+  create [subname]     Create a bundle for the current project (default: "default")
+  delete [subname]     Delete current project's bundle (default: "default")
+  delete <project>     Delete entire project and all its bundles
+  delete <project> <subname>  Delete a specific bundle from any project
+  run [subname] [-m|--memory <limit>]  Run a container (default subname: "default")
+                       Memory limit examples: 512m, 2g, 1024k
+  help                 Show this help
+
+Project is always derived from the current directory name.
+Data directory: $DATA
+EOF
+}
+
+main() {
+    bootstrap
+
+    case "${1:-}" in
+        list)
+            list
+            ;;
+        create)
+            create "${2:-}"
+            ;;
+        delete)
+            delete "${2:-}"
+            ;;
+        run)
+            run "${@:2}"
+            ;;
+        help)
+            help
+            ;;
+        *)
+            help
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"

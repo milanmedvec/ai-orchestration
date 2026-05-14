@@ -1,9 +1,13 @@
 #!/bin/sh
 session_id="$1"
 dir="${PROJECTS_DIR:-$HOME/projects}"
+container_id="claude-$session_id"
 
-tmux kill-session -t "claude-$session_id" >&2 \
-  || { printf '{"success":false,"sessionId":"%s"}\n' "$session_id"; exit 1; }
+runc kill "$container_id" SIGTERM >&2 2>/dev/null || true
+sleep 1
+runc delete "$container_id" >&2 2>/dev/null || true
+
+tmux kill-session -t "$container_id" >&2 2>/dev/null || true
 
 session_dir=$(find "$dir" -maxdepth 2 -mindepth 2 -type d -name "$session_id" 2>/dev/null | head -1)
 if [ -n "$session_dir" ]; then
