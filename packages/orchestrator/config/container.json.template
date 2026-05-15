@@ -7,11 +7,12 @@
       "gid": 0
     },
     "args": [
-      "/root/.nvm/versions/node/v24.15.0/bin/happy",
+      "happy",
       "--yolo"
     ],
     "env": [
-      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "IS_SANDBOX=1",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.nvm/versions/node/v24.15.0/bin/",
       "TERM=xterm"
     ],
     "cwd": "/project",

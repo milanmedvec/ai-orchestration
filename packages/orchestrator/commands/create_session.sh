@@ -28,7 +28,7 @@ jq \
     .hostname = $hostname |
     .process.args += ["--remote-control", $session_id] |
     (.mounts[] | select(.destination == "/project") | .source) = $src
-  ' "$commands_dir/config.json.template" > "$session_dir/config.json" \
+  ' "$commands_dir/../config/container.json.template" > "$session_dir/config.json" \
   || { printf '{"error":"failed to generate config.json"}\n' >&2; exit 1; }
 
 tmux new-session -d -s "$container_id" \
