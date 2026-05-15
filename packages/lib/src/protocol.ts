@@ -33,7 +33,7 @@ export const PeerMetaSchema = z.object({
 export const ProjectSchema = z.object({
   id: z.string(),
   name: z.string(),
-  repoUrl: z.string(),
+  repoUrl: z.string().optional(),
 });
 
 export const SessionSchema = z.object({
@@ -50,7 +50,7 @@ export const CommandDefs = {
     output: z.object({ projects: z.array(ProjectSchema) }),
   },
   create_project: {
-    input: z.object({ name: z.string(), repoUrl: z.string() }),
+    input: z.object({ name: z.string(), repoUrl: z.string().optional() }),
     output: ProjectSchema,
   },
   list_sessions: {
