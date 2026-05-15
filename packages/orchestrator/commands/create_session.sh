@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 project_id="$1"
 dir="${PROJECTS_DIR:-$HOME/projects}"
 project_dir="$dir/$project_id"

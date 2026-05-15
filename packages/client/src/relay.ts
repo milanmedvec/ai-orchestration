@@ -4,18 +4,19 @@ import {
   deserialize,
   type InboundMsg,
   type ClientBoundMsg,
-  type OrchestratorListMsg,
   type RegisterMsg,
+  type OrchestratorListMsg,
 } from "@ai-orchestration/lib";
 import type { Logger } from "@ai-orchestration/lib/logger";
 
-type MsgHandler<T extends ClientBoundMsg> = (msg: T) => void;
-type Handlers = Partial<{ [T in ClientBoundMsg as T["type"]]: MsgHandler<T>[] }>;
+type ClientBoundMsgMap = { [T in ClientBoundMsg as T["type"]]: T };
+type MsgHandler<T> = (msg: T) => void;
+type Handlers = Partial<{ [K in keyof ClientBoundMsgMap]: MsgHandler<ClientBoundMsgMap[K]>[] }>;
 
 export interface RelayClient {
   id: string;
   send(msg: InboundMsg): void;
-  on<T extends ClientBoundMsg>(type: T["type"], handler: MsgHandler<T>): void;
+  on<K extends keyof ClientBoundMsgMap>(type: K, handler: MsgHandler<ClientBoundMsgMap[K]>): void;
   close(): void;
 }
 
@@ -44,8 +45,8 @@ export function connect(url: string, name: string, logger: Logger): Promise<Rela
         logger.error("invalid message from server", { error: result.error });
         return;
       }
-      const msg = result.data;
 
+      const msg = result.data;
       if (msg.type === "orchestrator_list") {
         initialList = msg;
 
@@ -55,11 +56,12 @@ export function connect(url: string, name: string, logger: Logger): Promise<Rela
             ws.send(serialize(outbound));
           },
           on(type, handler) {
-            const list = (handlers[type] ??= []) as MsgHandler<typeof msg>[];
-            list.push(handler as MsgHandler<typeof msg>);
+            const list = (handlers[type] ??= []) as MsgHandler<ClientBoundMsgMap[typeof type]>[];
+            list.push(handler);
+
             // Replay the initial orchestrator_list for handlers registered after resolve
             if (type === "orchestrator_list" && initialList) {
-              (handler as MsgHandler<OrchestratorListMsg>)(initialList);
+              (handler as MsgHandler<ClientBoundMsgMap["orchestrator_list"]>)(initialList);
             }
           },
           close() {
@@ -84,7 +86,7 @@ export function connect(url: string, name: string, logger: Logger): Promise<Rela
 }
 
 function dispatch(handlers: Handlers, msg: ClientBoundMsg): void {
-  const list = handlers[msg.type as keyof Handlers] as MsgHandler<typeof msg>[] | undefined;
+  const list = handlers[msg.type as keyof Handlers] as MsgHandler<ClientBoundMsg>[] | undefined;
   if (list) {
     for (const h of list) h(msg);
   }

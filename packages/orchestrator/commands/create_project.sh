@@ -1,4 +1,7 @@
 #!/bin/sh
+
+set -e
+
 name="$1"
 repo_url="$2"
 dir="${PROJECTS_DIR:-$HOME/projects}"
