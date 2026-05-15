@@ -2,12 +2,17 @@
   "name": "@ai-orchestration/orchestrator",
   "type": "module",
   "private": true,
+  "bin": {
+    "ai-orchestrator": "src/cli.ts"
+  },
   "scripts": {
     "dev": "bun --hot src/orchestrator.ts",
-    "start": "bun src/orchestrator.ts"
+    "start": "bun src/orchestrator.ts",
+    "cli": "bun src/cli.ts"
   },
   "dependencies": {
-    "@ai-orchestration/lib": "workspace:*"
+    "@ai-orchestration/lib": "workspace:*",
+    "commander": "^14"
   },
   "devDependencies": {
     "@types/bun": "latest"

@@ -7,11 +7,10 @@
       "gid": 0
     },
     "args": [
-      "/root/.local/bin/claude",
-      "--dangerously-skip-permissions"
+      "/root/.nvm/versions/node/v24.15.0/bin/happy",
+      "--yolo"
     ],
     "env": [
-      "IS_SANDBOX=1",
       "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       "TERM=xterm"
     ],

@@ -127,7 +127,7 @@ delete_bundle() {
             runc kill "$cid" KILL 2>/dev/null || true
             sleep 1
         fi
-        
+
         echo "Deleting container '$cid'..."
         runc delete "$cid" 2>/dev/null || true
     done

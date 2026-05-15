@@ -36,8 +36,12 @@
     },
     "packages/orchestrator": {
       "name": "@ai-orchestration/orchestrator",
+      "bin": {
+        "ai-orchestrator": "src/cli.ts",
+      },
       "dependencies": {
         "@ai-orchestration/lib": "workspace:*",
+        "commander": "^14",
       },
       "devDependencies": {
         "@types/bun": "latest",
