@@ -7,6 +7,7 @@ import {
   type OrchestratorListMsg,
   type RegisterMsg,
 } from "@ai-orchestration/lib";
+import type { Logger } from "@ai-orchestration/lib/logger";
 
 type MsgHandler<T extends ClientBoundMsg> = (msg: T) => void;
 type Handlers = Partial<{ [T in ClientBoundMsg as T["type"]]: MsgHandler<T>[] }>;
@@ -18,7 +19,7 @@ export interface RelayClient {
   close(): void;
 }
 
-export function connect(url: string, name?: string): Promise<RelayClient> {
+export function connect(url: string, name: string, logger: Logger): Promise<RelayClient> {
   return new Promise((resolve, reject) => {
     const id = crypto.randomUUID();
     const handlers: Handlers = {};
@@ -40,7 +41,7 @@ export function connect(url: string, name?: string): Promise<RelayClient> {
     ws.addEventListener("message", (event) => {
       const result = deserialize(event.data as string, ClientBoundMsgSchema);
       if (!result.ok) {
-        console.error("[relay] invalid message from server:", result.error);
+        logger.error("invalid message from server", { error: result.error });
         return;
       }
       const msg = result.data;

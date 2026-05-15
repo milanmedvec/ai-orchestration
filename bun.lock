@@ -19,6 +19,7 @@
       "dependencies": {
         "@ai-orchestration/lib": "workspace:*",
         "commander": "^14",
+        "zod": "^3",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -42,6 +43,7 @@
       "dependencies": {
         "@ai-orchestration/lib": "workspace:*",
         "commander": "^14",
+        "zod": "^3",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -51,6 +53,7 @@
       "name": "@ai-orchestration/relay-server",
       "dependencies": {
         "@ai-orchestration/lib": "workspace:*",
+        "zod": "^3",
       },
       "devDependencies": {
         "@types/bun": "latest",

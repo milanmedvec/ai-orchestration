@@ -15,6 +15,7 @@ export function deserialize<T>(
   } catch {
     return { ok: false, error: "Invalid JSON" };
   }
+
   const result = schema.safeParse(json);
   return result.success
     ? { ok: true, data: result.data }

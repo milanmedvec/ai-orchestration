@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@ai-orchestration/lib": "workspace:*",
-    "commander": "^14"
+    "commander": "^14",
+    "zod": "^3"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -6,13 +6,14 @@
     "ai-orchestrator": "src/cli.ts"
   },
   "scripts": {
-    "dev": "bun --hot src/orchestrator.ts",
-    "start": "bun src/orchestrator.ts",
+    "dev": "bun --hot src/main.ts",
+    "start": "bun src/main.ts",
     "cli": "bun src/cli.ts"
   },
   "dependencies": {
     "@ai-orchestration/lib": "workspace:*",
-    "commander": "^14"
+    "commander": "^14",
+    "zod": "^3"
   },
   "devDependencies": {
     "@types/bun": "latest"

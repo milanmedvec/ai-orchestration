@@ -3,7 +3,9 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": "./src/protocol.ts"
+    ".": "./src/protocol.ts",
+    "./logger": "./src/logger.ts",
+    "./config": "./src/config.ts"
   },
   "dependencies": {
     "zod": "^3"

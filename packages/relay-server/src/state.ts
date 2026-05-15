@@ -13,24 +13,26 @@ export interface Peer {
   ws: ServerWebSocket<PeerSocketData>;
 }
 
-export const peers = new Map<string, Peer>();
+export class State {
+  readonly peers = new Map<string, Peer>();
 
-export function addPeer(peer: Peer): void {
-  peers.set(peer.id, peer);
-}
+  add(peer: Peer): void {
+    this.peers.set(peer.id, peer);
+  }
 
-export function removePeer(id: string): void {
-  peers.delete(id);
-}
+  remove(id: string): void {
+    this.peers.delete(id);
+  }
 
-export function getPeer(id: string): Peer | undefined {
-  return peers.get(id);
-}
+  get(id: string): Peer | undefined {
+    return this.peers.get(id);
+  }
 
-export function getOrchestrators(): Peer[] {
-  return [...peers.values()].filter((p) => p.role === "orchestrator");
-}
+  orchestrators(): Peer[] {
+    return [...this.peers.values()].filter((p) => p.role === "orchestrator");
+  }
 
-export function getClients(): Peer[] {
-  return [...peers.values()].filter((p) => p.role === "client");
+  clients(): Peer[] {
+    return [...this.peers.values()].filter((p) => p.role === "client");
+  }
 }

@@ -3,11 +3,12 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "@ai-orchestration/lib": "workspace:*"
+    "@ai-orchestration/lib": "workspace:*",
+    "zod": "^3"
   },
   "scripts": {
-    "dev": "bun --hot src/server.ts",
-    "start": "bun src/server.ts"
+    "dev": "bun --hot src/main.ts",
+    "start": "bun src/main.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"
