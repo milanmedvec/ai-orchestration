@@ -12,17 +12,18 @@ commands_dir="$(dirname "$0")"
 
 [ -f "$project_dir/project.toml" ] || { printf '{"error":"project.toml not found"}\n' >&2; exit 1; }
 
+project_name=$(sed -n 's/^name = "\(.*\)"/\1/p' "$project_dir/project.toml")
 session_id="$(uuidgen | tr '[:upper:]' '[:lower:]')"
-session_dir="$project_dir/$name"
-bundle_dir="$project_dir/.bundles/$name"
+session_dir="$project_dir/${project_name}_${name}"
+bundle_dir="$project_dir/.bundles/${project_name}_${name}"
 branch="feature/$name"
-container_id="claude-$name"
-project_cwd="/project/$name"
+container_id="claude-${project_name}_${name}"
+project_cwd="/project/${project_name}_${name}"
 
 git -C "$project_dir/.repo" worktree add "$session_dir" -b "$branch" >&2 \
   || { printf '{"error":"failed to create worktree"}\n' >&2; exit 1; }
 
-printf 'gitdir: ../.repo/.git/worktrees/%s\n' "$name" > "$session_dir/.git"
+printf 'gitdir: ../.repo/.git/worktrees/%s\n' "${project_name}_${name}" > "$session_dir/.git"
 
 mkdir -p "$bundle_dir"
 

@@ -16,6 +16,7 @@ for session_dir in "$project_dir"/*/; do
   name="${session_dir%/}"
   name="${name##*/}"
   [ "$name" = ".bundles" ] && continue
+  [ "$name" = ".repo" ] && continue
 
   container_id="claude-$name"
   tmux has-session -t "$container_id" 2>/dev/null || continue
