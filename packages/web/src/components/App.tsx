@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { uuid } from "../uuid.ts";
 import { useRelay } from "../hooks/useRelay.ts";
 import { useOrchestrators } from "../hooks/useOrchestrators.ts";
 import { useCommand } from "../hooks/useCommand.ts";
@@ -21,7 +22,7 @@ export function App() {
     (level: "info" | "error", message: string, detail?: unknown) => {
       setLog((prev) =>
         [
-          { id: crypto.randomUUID(), ts: Date.now(), level, message, detail },
+          { id: uuid(), ts: Date.now(), level, message, detail },
           ...prev,
         ].slice(0, MAX_LOG_ENTRIES),
       );

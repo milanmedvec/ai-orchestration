@@ -6,6 +6,7 @@ import {
   type ClientBoundMsg,
   type RegisterMsg,
 } from "@ai-orchestration/lib";
+import { uuid } from "./uuid.ts";
 
 type ClientBoundMsgMap = { [T in ClientBoundMsg as T["type"]]: T };
 type MsgHandler<T> = (msg: T) => void;
@@ -23,7 +24,7 @@ export interface RelayClient {
 }
 
 export function connect(url: string, name: string): RelayClient {
-  const id = crypto.randomUUID();
+  const id = uuid();
   const handlers: Handlers = {};
   const statusHandlers = new Set<(s: RelayStatus) => void>();
   let currentStatus: RelayStatus = "connecting";

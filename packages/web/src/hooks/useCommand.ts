@@ -6,6 +6,7 @@ import type {
 } from "@ai-orchestration/lib";
 import { CommandDefs } from "@ai-orchestration/lib";
 import type { RelayClient } from "../relay.ts";
+import { uuid } from "../uuid.ts";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -24,7 +25,7 @@ export function useCommand(
       if (!client) return Promise.reject(new Error("Relay not connected"));
       if (!orchestratorId) return Promise.reject(new Error("No orchestrator selected"));
 
-      const requestId = crypto.randomUUID();
+      const requestId = uuid();
 
       return new Promise<CommandOutput<K>>((resolve, reject) => {
         const cleanups: (() => void)[] = [];

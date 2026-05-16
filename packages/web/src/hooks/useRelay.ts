@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { connect, type RelayClient, type RelayStatus } from "../relay.ts";
+import { uuid } from "../uuid.ts";
 
 let cached: { url: string; client: RelayClient } | null = null;
 
@@ -10,7 +11,7 @@ function getOrConnect(): RelayClient {
     return cached.client;
   }
 
-  const name = `web-${crypto.randomUUID().slice(0, 8)}`;
+  const name = `web-${uuid().slice(0, 8)}`;
   const client = connect(relayUrl, name);
   cached = { url: relayUrl, client };
   return client;
