@@ -15,18 +15,23 @@ session_id="$(uuidgen | tr '[:upper:]' '[:lower:]')"
 session_dir="$project_dir/$name"
 branch="feature/$name"
 container_id="claude-$name"
+project_cwd="/project/$name"
 
 git -C "$project_dir/.repo" worktree add "$session_dir" -b "$branch" >&2 \
   || { printf '{"error":"failed to create worktree"}\n' >&2; exit 1; }
 
+printf 'gitdir: ../.repo/.git/worktrees/%s\n' "$name" > "$session_dir/.git"
+
 jq \
   --arg rootfs "$rootfs" \
-  --arg src "$session_dir" \
+  --arg src "$project_dir" \
+  --arg cwd "$project_cwd" \
   --arg hostname "$container_id" \
   --arg name "$name" \
   '
     .root.path = $rootfs |
     .hostname = $hostname |
+    .process.cwd = $cwd |
     .process.args += ["--remote-control", $name] |
     (.mounts[] | select(.destination == "/project") | .source) = $src
   ' "$commands_dir/../config/container.json.template" > "$session_dir/config.json" \
