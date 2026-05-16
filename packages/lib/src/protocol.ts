@@ -39,6 +39,7 @@ export const ProjectSchema = z.object({
 
 export const SessionSchema = z.object({
   id: z.string(),
+  name: z.string(),
   projectId: z.string(),
   status: z.enum(["active", "idle", "terminated"]),
 });
@@ -59,7 +60,7 @@ export const CommandDefs = {
     output: z.object({ sessions: z.array(SessionSchema) }),
   },
   create_session: {
-    input: z.object({ projectId: z.string() }),
+    input: z.object({ projectId: z.string(), name: z.string() }),
     output: SessionSchema,
   },
   terminate_session: {

@@ -20,7 +20,7 @@ while IFS= read -r name; do
     json="$json,";
   fi
 
-  json="$json{\"id\":\"$id\",\"projectId\":\"$project_id\",\"status\":\"active\"}"
+  json="$json{\"id\":\"$id\",\"name\":\"$id\",\"projectId\":\"$project_id\",\"status\":\"active\"}"
 done << EOF
 $names
 EOF

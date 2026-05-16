@@ -12,7 +12,7 @@ run = "commands/create_project.sh '{{name}}' '{{repoUrl}}'"
 run = "commands/list_sessions.sh '{{projectId}}'"
 
 [commands.create_session]
-run = "commands/create_session.sh '{{projectId}}'"
+run = "commands/create_session.sh '{{projectId}}' '{{name}}'"
 
 [commands.terminate_session]
 run = "commands/terminate_session.sh '{{sessionId}}'"

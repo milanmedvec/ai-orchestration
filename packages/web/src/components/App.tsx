@@ -33,11 +33,11 @@ export function App() {
   const ready = status === "open" && selectedId !== null;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       <ConnectionBar status={status} clientId={client?.id ?? null} />
 
-      <main className="flex-1 p-4 grid gap-4 lg:grid-cols-2 max-w-7xl w-full mx-auto">
-        <div className="flex flex-col gap-4">
+      <main className="flex-1 min-h-0 p-4 grid gap-4 lg:grid-cols-2 items-stretch">
+        <div className="flex flex-col gap-4 min-h-0 overflow-y-auto">
           <OrchestratorPanel
             orchestrators={orchestrators}
             selectedId={selectedId}
@@ -54,7 +54,7 @@ export function App() {
           )}
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-0">
           <ResultLog entries={log} onClear={() => setLog([])} />
         </div>
       </main>

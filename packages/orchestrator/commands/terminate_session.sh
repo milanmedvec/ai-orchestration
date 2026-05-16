@@ -8,7 +8,8 @@ container_id="claude-$session_id"
 
 runc kill "$container_id" SIGTERM >&2 2>/dev/null || true
 sleep 1
-runc delete "$container_id" >&2 2>/dev/null || true
+runc kill "$container_id" SIGKILL >&2 2>/dev/null || true
+runc delete --force "$container_id" >&2 2>/dev/null || true
 
 tmux kill-session -t "$container_id" >&2 2>/dev/null || true
 

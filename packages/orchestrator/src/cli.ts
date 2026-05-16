@@ -77,13 +77,13 @@ export function createOrchestratorCommands(program: Command, context: Context): 
     });
 
   program
-    .command("create-session <projectId>")
+    .command("create-session <projectId> <featureName>")
     .description("create a new session for a project")
-    .action(async (projectId: string) => {
+    .action(async (projectId: string, featureName: string) => {
       const { toml } = program.opts<{ toml: string }>();
 
       try {
-        await runCommand(toml, "create_session", { projectId }, context);
+        await runCommand(toml, "create_session", { projectId, name: featureName }, context);
       } catch (error) {
         logger.error("command failed", { error });
         process.exit(1);

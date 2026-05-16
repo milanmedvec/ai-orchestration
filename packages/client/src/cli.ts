@@ -137,11 +137,11 @@ export function createClientCommands(program: Command, context: Context): void {
     });
 
   program
-    .command("create-session <projectId>")
+    .command("create-session <projectId> <featureName>")
     .description("create a new session for a project")
-    .action(async (projectId: string) => {
+    .action(async (projectId: string, featureName: string) => {
       const opts = program.opts<GlobalOpts>();
-      await runCommand(opts, "create_session", { projectId }, context);
+      await runCommand(opts, "create_session", { projectId, name: featureName }, context);
     });
 
   program
