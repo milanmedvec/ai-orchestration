@@ -9,6 +9,7 @@ Bun workspace monorepo. Three packages under `packages/`:
 | `packages/relay-server` | `@ai-orchestration/relay-server` | WebSocket hub. Routes messages between clients and orchestrators. |
 | `packages/client` | `@ai-orchestration/client` | CLI client. Commands: `orchestrators`, `list-projects`, `create-project`, `list-sessions`, `create-session`, `terminate-session`. |
 | `packages/orchestrator` | `@ai-orchestration/orchestrator` | Reads `commands.toml`, runs shell commands, validates input/output against protocol schemas. |
+| `packages/web` | `@ai-orchestration/web` | React frontend. Projects/sessions UI. |
 
 Each package has its own `tsconfig.json` extending the root one, and a `src/` directory for implementation files.
 
@@ -23,6 +24,9 @@ bun run --cwd packages/orchestrator dev
 
 # Start client stub
 bun run --cwd packages/client dev
+
+# Start web UI
+bun run --cwd packages/web dev
 ```
 
 Health check: `curl http://localhost:3000/health`
@@ -38,6 +42,38 @@ All shared Zod schemas, types, and helpers live in `packages/lib/src/protocol.ts
 **Orchestrator config**: `packages/orchestrator/commands.toml` maps command names to shell commands with `{{fieldName}}` template vars. Commands must output JSON to stdout matching the output schema.
 
 WebSocket endpoint: `ws://localhost:3000/ws` (override with `RELAY_URL` / `PORT` env vars).
+
+### Orchestrator — session & container layout
+
+Projects are stored under `$PROJECTS_DIR` (default `~/projects`):
+
+```
+~/projects/{projectId}/
+  project.toml                          # id, name, repoUrl
+  .repo/                                # non-bare git repo
+  {projectName}_{sessionName}/          # git worktree (= session)
+  .bundles/{projectName}_{sessionName}/ # runc OCI bundle (config.json)
+```
+
+The worktree's `.git` file uses a **relative path** (`gitdir: ../.repo/.git/worktrees/…`) so git works identically on the host and inside the container.
+
+**Container** (runtime: `runc`, launched in a detached tmux session):
+
+| Property | Value |
+|----------|-------|
+| Container / tmux id | `claude-{projectName}_{sessionName}` |
+| Mount | `{projectDir}` → `/project` |
+| `cwd` | `/project/{projectName}_{sessionName}` |
+| Rootfs | `$ROOTFS_DIR` (default `~/.local/share/ai-orchestration/rootfs`) |
+
+**Env vars:**
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `PROJECTS_DIR` | `~/projects` | Root for all project directories |
+| `ROOTFS_DIR` | `~/.local/share/ai-orchestration/rootfs` | Shared container rootfs |
+| `RELAY_URL` | `ws://localhost:3000/ws` | WebSocket relay endpoint |
+| `PORT` | `3000` | Relay server listen port |
 
 ---
 

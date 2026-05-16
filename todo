@@ -9,5 +9,7 @@ x client should have react app to control orchestrator by web
 x when we are creating a session, session name can be given by user like a name of feature, not hash
 
 - how to run dev server from the container?
+- remove $HOME, define config for default location
+- build orchestrator, run as binary - with env / options to commands folder and config folder
 
 - polishing

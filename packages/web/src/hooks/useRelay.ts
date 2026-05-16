@@ -5,9 +5,19 @@ type ConfigResponse = { relayUrl: string };
 
 let cached: { url: string; client: RelayClient } | null = null;
 
-async function getOrConnect(): Promise<RelayClient> {
+async function resolveRelayUrl(): Promise<string> {
+  // Bun injects RELAY_URL at build time (set in .env for Capacitor builds).
+  // Falls back to fetching /config when running as a served web app.
+  const buildTimeUrl = import.meta.env.RELAY_URL as string | undefined;
+  if (buildTimeUrl) return buildTimeUrl;
+
   const res = await fetch("/config");
   const { relayUrl } = (await res.json()) as ConfigResponse;
+  return relayUrl;
+}
+
+async function getOrConnect(): Promise<RelayClient> {
+  const relayUrl = await resolveRelayUrl();
 
   if (cached && cached.url === relayUrl && cached.client.status() !== "closed") {
     return cached.client;

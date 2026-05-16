@@ -4,10 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "bun --hot src/server.ts",
-    "start": "bun src/server.ts"
+    "start": "bun src/server.ts",
+    "build": "bun build src/index.html --outdir dist --minify"
   },
   "dependencies": {
     "@ai-orchestration/lib": "workspace:*",
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "react": "^19",
     "react-dom": "^19",
     "zod": "^3"

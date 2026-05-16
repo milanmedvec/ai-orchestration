@@ -102,37 +102,39 @@ export function ProjectsPanel({
       {projects.length === 0 ? (
         <p className="px-4 py-6 text-sm text-slate-500">No projects.</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead className="text-left text-xs uppercase text-slate-500">
-            <tr>
-              <th className="px-4 py-2 font-normal">Open</th>
-              <th className="px-4 py-2 font-normal">ID</th>
-              <th className="px-4 py-2 font-normal">Name</th>
-              <th className="px-4 py-2 font-normal">Repo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {projects.map((p) => (
-              <tr
-                key={p.id}
-                className={`border-t border-slate-800/60 ${selectedProjectId === p.id ? "bg-slate-800/40" : ""}`}
-              >
-                <td className="px-4 py-2">
-                  <button
-                    type="button"
-                    onClick={() => onSelectProject(p.id === selectedProjectId ? null : p.id)}
-                    className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700"
-                  >
-                    {selectedProjectId === p.id ? "Close" : "Sessions"}
-                  </button>
-                </td>
-                <td className="px-4 py-2 font-mono text-xs text-slate-400">{p.id}</td>
-                <td className="px-4 py-2 text-slate-200">{p.name}</td>
-                <td className="px-4 py-2 text-slate-400">{p.repoUrl ?? "—"}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs uppercase text-slate-500">
+              <tr>
+                <th className="px-4 py-2 font-normal">Open</th>
+                <th className="px-4 py-2 font-normal">ID</th>
+                <th className="px-4 py-2 font-normal">Name</th>
+                <th className="px-4 py-2 font-normal">Repo</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {projects.map((p) => (
+                <tr
+                  key={p.id}
+                  className={`border-t border-slate-800/60 ${selectedProjectId === p.id ? "bg-slate-800/40" : ""}`}
+                >
+                  <td className="px-4 py-2">
+                    <button
+                      type="button"
+                      onClick={() => onSelectProject(p.id === selectedProjectId ? null : p.id)}
+                      className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700"
+                    >
+                      {selectedProjectId === p.id ? "Close" : "Sessions"}
+                    </button>
+                  </td>
+                  <td className="px-4 py-2 font-mono text-xs text-slate-400">{p.id}</td>
+                  <td className="px-4 py-2 text-slate-200 max-w-[10rem] truncate">{p.name}</td>
+                  <td className="px-4 py-2 text-slate-400 max-w-[12rem] truncate">{p.repoUrl ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );
