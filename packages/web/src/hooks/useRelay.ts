@@ -1,23 +1,10 @@
 import { useEffect, useState } from "react";
 import { connect, type RelayClient, type RelayStatus } from "../relay.ts";
 
-type ConfigResponse = { relayUrl: string };
-
 let cached: { url: string; client: RelayClient } | null = null;
 
-async function resolveRelayUrl(): Promise<string> {
-  // Bun injects RELAY_URL at build time (set in .env for Capacitor builds).
-  // Falls back to fetching /config when running as a served web app.
-  const buildTimeUrl = import.meta.env.RELAY_URL as string | undefined;
-  if (buildTimeUrl) return buildTimeUrl;
-
-  const res = await fetch("/config");
-  const { relayUrl } = (await res.json()) as ConfigResponse;
-  return relayUrl;
-}
-
-async function getOrConnect(): Promise<RelayClient> {
-  const relayUrl = await resolveRelayUrl();
+function getOrConnect(): RelayClient {
+  const relayUrl = import.meta.env.VITE_RELAY_URL ?? "ws://localhost:3000/ws";
 
   if (cached && cached.url === relayUrl && cached.client.status() !== "closed") {
     return cached.client;
@@ -34,19 +21,10 @@ export function useRelay(): { client: RelayClient | null; status: RelayStatus } 
   const [status, setStatus] = useState<RelayStatus>("connecting");
 
   useEffect(() => {
-    let unsubStatus: (() => void) | null = null;
-    let cancelled = false;
-
-    getOrConnect().then((c) => {
-      if (cancelled) return;
-      setClient(c);
-      unsubStatus = c.onStatus(setStatus);
-    });
-
-    return () => {
-      cancelled = true;
-      unsubStatus?.();
-    };
+    const c = getOrConnect();
+    setClient(c);
+    const unsub = c.onStatus(setStatus);
+    return unsub;
   }, []);
 
   return { client, status };
