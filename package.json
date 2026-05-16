@@ -7,7 +7,8 @@
     "packages/lib",
     "packages/client",
     "packages/relay-server",
-    "packages/orchestrator"
+    "packages/orchestrator",
+    "packages/web"
   ],
   "devDependencies": {
     "@types/bun": "latest"

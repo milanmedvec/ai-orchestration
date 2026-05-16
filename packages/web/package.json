@@ -1,0 +1,22 @@
+{
+  "name": "@ai-orchestration/web",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot src/server.ts",
+    "start": "bun src/server.ts"
+  },
+  "dependencies": {
+    "@ai-orchestration/lib": "workspace:*",
+    "react": "^19",
+    "react-dom": "^19",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "bun-plugin-tailwind": "^0.0.15",
+    "tailwindcss": "^4"
+  }
+}
