@@ -3,28 +3,26 @@
 set -e
 
 project_id="$1"
+dir="${PROJECTS_DIR:-$HOME/projects}"
+project_dir="$dir/$project_id"
 
-names=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep "^claude-") || true
+[ -d "$project_dir" ] || { printf '{"sessions":[]}\n'; exit 0; }
 
 json='['
 first=1
 
-while IFS= read -r name; do
-  [ -z "$name" ] && continue
+for session_dir in "$project_dir"/*/; do
+  [ -d "$session_dir" ] || continue
+  name="${session_dir%/}"
+  name="${name##*/}"
+  [ "$name" = ".bundles" ] && continue
 
-  id="${name#claude-}"
-  if [ $first -eq 1 ];
-  then
-    first=0;
-  else
-    json="$json,";
-  fi
+  container_id="claude-$name"
+  tmux has-session -t "$container_id" 2>/dev/null || continue
 
-  json="$json{\"id\":\"$id\",\"name\":\"$id\",\"projectId\":\"$project_id\",\"status\":\"active\"}"
-done << EOF
-$names
-EOF
+  [ $first -eq 1 ] && first=0 || json="$json,"
+  json="$json{\"id\":\"$name\",\"name\":\"$name\",\"projectId\":\"$project_id\",\"status\":\"active\"}"
+done
 
 json="$json]"
-
 printf '{"sessions":%s}\n' "$json"
