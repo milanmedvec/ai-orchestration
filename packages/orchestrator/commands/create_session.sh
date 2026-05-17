@@ -13,7 +13,7 @@ commands_dir="$(dirname "$0")"
 [ -f "$project_dir/project.toml" ] || { printf '{"error":"project.toml not found"}\n' >&2; exit 1; }
 
 project_name=$(sed -n 's/^name = "\(.*\)"/\1/p' "$project_dir/project.toml")
-session_id="$(uuidgen | tr '[:upper:]' '[:lower:]')"
+session_id="$(cat /proc/sys/kernel/random/uuid)"
 session_dir="$project_dir/${project_name}_${name}"
 bundle_dir="$project_dir/.bundles/${project_name}_${name}"
 branch="feature/$name"
