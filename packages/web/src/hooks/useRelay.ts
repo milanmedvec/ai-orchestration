@@ -3,32 +3,38 @@ import { connect, type RelayClient, type RelayStatus } from "../relay.ts";
 import { uuid } from "../uuid.ts";
 import { config } from "../config.ts";
 
-let cached: { url: string; client: RelayClient } | null = null;
+let cached: { url: string; token: string | undefined; client: RelayClient } | null = null;
 
-function getOrConnect(): RelayClient {
+function getOrConnect(token: string | undefined): RelayClient {
   const relayUrl = config.RELAY_URL;
 
-  if (cached && cached.url === relayUrl && cached.client.status() !== "closed") {
+  if (
+    cached &&
+    cached.url === relayUrl &&
+    cached.token === token &&
+    cached.client.status() !== "closed"
+  ) {
     return cached.client;
   }
 
+  cached?.client.close();
+
   const name = `web-${uuid().slice(0, 8)}`;
-  const token = config.AUTH_TOKEN;
   const client = connect(relayUrl, name, token);
-  cached = { url: relayUrl, client };
+  cached = { url: relayUrl, token, client };
   return client;
 }
 
-export function useRelay(): { client: RelayClient | null; status: RelayStatus } {
+export function useRelay(token: string | undefined): { client: RelayClient | null; status: RelayStatus } {
   const [client, setClient] = useState<RelayClient | null>(null);
   const [status, setStatus] = useState<RelayStatus>("connecting");
 
   useEffect(() => {
-    const c = getOrConnect();
+    const c = getOrConnect(token);
     setClient(c);
     const unsub = c.onStatus(setStatus);
     return unsub;
-  }, []);
+  }, [token]);
 
   return { client, status };
 }

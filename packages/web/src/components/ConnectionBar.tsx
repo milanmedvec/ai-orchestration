@@ -7,7 +7,15 @@ const STATUS_STYLES: Record<RelayStatus, string> = {
   error: "bg-rose-500/20 text-rose-300 border-rose-500/40",
 };
 
-export function ConnectionBar({ status, clientId }: { status: RelayStatus; clientId: string | null }) {
+export function ConnectionBar({
+  status,
+  clientId,
+  onLogout,
+}: {
+  status: RelayStatus;
+  clientId: string | null;
+  onLogout: () => void;
+}) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-800 bg-slate-900/60">
       <span className="text-sm font-semibold text-slate-200">AI Orchestration</span>
@@ -15,6 +23,12 @@ export function ConnectionBar({ status, clientId }: { status: RelayStatus; clien
       {clientId && (
         <span className="text-xs text-slate-500 font-mono truncate">client {clientId.slice(0, 8)}</span>
       )}
+      <button
+        onClick={onLogout}
+        className="ml-auto text-xs text-slate-500 hover:text-slate-300 transition-colors"
+      >
+        disconnect
+      </button>
     </div>
   );
 }

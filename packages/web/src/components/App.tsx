@@ -4,16 +4,42 @@ import { useRelay } from "../hooks/useRelay.ts";
 import { useOrchestrators } from "../hooks/useOrchestrators.ts";
 import { useCommand } from "../hooks/useCommand.ts";
 import { ConnectionBar } from "./ConnectionBar.tsx";
+import { LoginScreen } from "./LoginScreen.tsx";
 import { OrchestratorPanel } from "./OrchestratorPanel.tsx";
 import { ProjectsPanel } from "./ProjectsPanel.tsx";
 import { SessionsPanel } from "./SessionsPanel.tsx";
 import { ResultLog } from "./ResultLog.tsx";
 import type { LogEntry } from "../types.ts";
 
+const TOKEN_KEY = "relay_token";
 const MAX_LOG_ENTRIES = 100;
 
+function loadToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
 export function App() {
-  const { client, status } = useRelay();
+  const [token, setToken] = useState<string | null>(loadToken);
+
+  const handleLogin = (t: string) => {
+    localStorage.setItem(TOKEN_KEY, t);
+    setToken(t);
+  };
+
+  if (!token) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
+  return <ConnectedApp token={token} onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null); }} />;
+}
+
+interface ConnectedAppProps {
+  token: string;
+  onLogout: () => void;
+}
+
+function ConnectedApp({ token, onLogout }: ConnectedAppProps) {
+  const { client, status } = useRelay(token);
   const { orchestrators, selectedId, setSelectedId } = useOrchestrators(client);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [log, setLog] = useState<LogEntry[]>([]);
@@ -35,7 +61,7 @@ export function App() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <ConnectionBar status={status} clientId={client?.id ?? null} />
+      <ConnectionBar status={status} clientId={client?.id ?? null} onLogout={onLogout} />
 
       <main className="flex-1 min-h-0 p-4 grid gap-4 lg:grid-cols-2 items-stretch">
         <div className="flex flex-col gap-4 min-h-0 overflow-y-auto">
