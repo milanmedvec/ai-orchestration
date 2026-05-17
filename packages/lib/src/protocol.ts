@@ -88,6 +88,7 @@ export const RegisterMsgSchema = z.object({
   id: z.string(),
   role: RoleSchema,
   meta: PeerMetaSchema.optional(),
+  token: z.string().optional(),
 });
 
 export const CommandRequestMsgSchema = z.object({

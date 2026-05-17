@@ -68,6 +68,13 @@ export function createHandlers(context: Context) {
   }
 
   function handleRegister(ws: WS, msg: RegisterMsg): void {
+    const requiredToken = context.config.AUTH_TOKEN;
+    if (requiredToken && msg.token !== requiredToken) {
+      sendError(ws, "UNAUTHORIZED", "Invalid or missing token");
+      ws.close();
+      return;
+    }
+
     if (state.get(msg.id)) {
       sendError(ws, "DUPLICATE_ID", `ID ${msg.id} is already registered`);
       return;

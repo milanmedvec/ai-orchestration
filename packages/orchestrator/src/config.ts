@@ -8,6 +8,7 @@ export const ConfigSchema = z.object({
   COMMANDS_TOML: z.string().default(defaultCommandsToml),
   ORCHESTRATOR_NAME: z.string().default("orchestrator"),
   CONTAINER_TEMPLATE: z.string().default(defaultContainerTemplate),
+  AUTH_TOKEN: z.string().optional(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

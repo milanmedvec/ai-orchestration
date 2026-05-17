@@ -23,7 +23,7 @@ export interface RelayClient {
   close(): void;
 }
 
-export function connect(url: string, name: string): RelayClient {
+export function connect(url: string, name: string, token?: string): RelayClient {
   const id = uuid();
   const handlers: Handlers = {};
   const statusHandlers = new Set<(s: RelayStatus) => void>();
@@ -42,6 +42,7 @@ export function connect(url: string, name: string): RelayClient {
       id,
       role: "client",
       meta: { name },
+      token,
     };
     ws.send(serialize(reg));
     setStatus("open");

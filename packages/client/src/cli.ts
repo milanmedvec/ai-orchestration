@@ -19,7 +19,7 @@ async function runCommand(
 ): Promise<void> {
   const { logger } = context;
 
-  const relay = await connect(opts.relay, opts.name, logger).catch((err: unknown) => {
+  const relay = await connect(opts.relay, opts.name, logger, context.config.AUTH_TOKEN).catch((err: unknown) => {
     logger.error("failed to connect to relay", { error: err });
     process.exit(1);
   });
@@ -89,7 +89,7 @@ export function createClientCommands(program: Command, context: Context): void {
     .description("list connected orchestrators")
     .action(async () => {
       const opts = program.opts<{ relay: string; name: string }>();
-      const relay = await connect(opts.relay, opts.name, logger).catch((err: unknown) => {
+      const relay = await connect(opts.relay, opts.name, logger, context.config.AUTH_TOKEN).catch((err: unknown) => {
         logger.error("failed to connect to relay", { error: err });
         process.exit(1);
       });

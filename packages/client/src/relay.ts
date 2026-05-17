@@ -20,7 +20,7 @@ export interface RelayClient {
   close(): void;
 }
 
-export function connect(url: string, name: string, logger: Logger): Promise<RelayClient> {
+export function connect(url: string, name: string, logger: Logger, token?: string): Promise<RelayClient> {
   return new Promise((resolve, reject) => {
     const id = crypto.randomUUID();
     const handlers: Handlers = {};
@@ -35,6 +35,7 @@ export function connect(url: string, name: string, logger: Logger): Promise<Rela
         id,
         role: "client",
         meta: { name: name ?? id },
+        token,
       };
       ws.send(serialize(reg));
     });

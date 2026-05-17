@@ -24,6 +24,7 @@ export function startOrchestrator(context: Context, executor: Executor): void {
       id: orchestratorId,
       role: "orchestrator",
       meta: { name: config.ORCHESTRATOR_NAME, capabilities: executor.supportedCommands() },
+      token: config.AUTH_TOKEN,
     };
 
     ws.send(serialize(msg));
