@@ -29,8 +29,9 @@ export class Executor {
 
     let cmd = def.run;
     for (const [k, v] of Object.entries(input)) {
-      cmd = cmd.replaceAll(`{{${k}}}`, String(v));
+      cmd = cmd.replaceAll(`{{${k}}}`, v != null ? String(v) : "");
     }
+    cmd = cmd.replace(/\{\{[^}]+\}\}/g, "");
 
     const proc = Bun.spawn(["sh", "-c", cmd], { stdout: "pipe", stderr: "pipe" });
     const [stdout, exitCode] = await Promise.all([

@@ -5,7 +5,7 @@ set -e
 name="$1"
 repo_url="$2"
 dir="${PROJECTS_DIR:-$HOME/projects}"
-project_id="$(uuidgen | tr '[:upper:]' '[:lower:]')"
+project_id="$(cat /proc/sys/kernel/random/uuid)"
 path="$dir/$project_id"
 
 mkdir -p "$path" >&2
